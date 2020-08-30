@@ -1,17 +1,22 @@
-import React, {useEffect, useState} from 'react';
-import {View, Text, Slider, Button, Image} from 'react-native';
+import React, {useEffect, useState, useRef} from 'react';
+import {
+  View,
+  Text,
+  Slider,
+  Animated,
+  Image,
+  TouchableOpacity,
+} from 'react-native';
 import {Player} from '@react-native-community/audio-toolkit';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import {TouchableOpacity} from 'react-native-gesture-handler';
 
 let player = null;
-let interval;
 let progressInterval;
 let lastSeek = 0;
 const AudioScreen = (props) => {
   const [btn, setBttn] = useState('play');
   const [progress, setProgress] = useState(0);
-  const [time, setTm] = useState(0);
+
   const togglePlayPause = async () => {
     try {
       if (player.isPlaying) {
@@ -30,7 +35,6 @@ const AudioScreen = (props) => {
     init();
     return () => {
       player.destroy();
-      clearInterval(interval);
       clearInterval(progressInterval);
     };
   }, []);
@@ -45,12 +49,13 @@ const AudioScreen = (props) => {
         console.log(err);
       }
     });
-    interval = setInterval(() => {
-      let readableTm = readableTime(player.currentTime / 1000);
-      setTm(readableTm);
-    }, 100);
     progressInterval = setInterval(() => {
       if (player && shouldUpdateProgressBar()) {
+        if (
+          readableTime(player.currentTime / 1000) ==
+          readableTime(player.duration / 1000)
+        )
+          setBttn('play');
         let currentProgress = Math.max(0, player.currentTime) / player.duration;
         if (isNaN(currentProgress)) {
           currentProgress = 0;
@@ -89,6 +94,29 @@ const AudioScreen = (props) => {
     ret += '' + secs;
     return ret;
   }
+
+  const seekBackward = async () => {
+    if (!player) {
+      return;
+    }
+    lastSeek = Date.now();
+    let position =
+      player.currentTime - 5000 < 0 ? 0 : player.currentTime - 5000;
+    await player.seek(position);
+  };
+
+  const seekForward = async () => {
+    if (!player) {
+      return;
+    }
+    lastSeek = Date.now();
+    let position =
+      player.currentTime + 5000 > player.duration
+        ? player.duration
+        : player.currentTime + 5000;
+    await player.seek(position);
+  };
+
   return (
     <View
       style={{
@@ -115,7 +143,9 @@ const AudioScreen = (props) => {
             justifyContent: 'space-between',
             margin: 10,
           }}>
-          <Text>{time}</Text>
+          <Animated.Text>
+            {player ? readableTime(player.currentTime / 1000) : readableTime(0)}
+          </Animated.Text>
           <View style={{width: '80%'}}>
             <Slider
               step={0.0001}
@@ -129,11 +159,19 @@ const AudioScreen = (props) => {
               : readableTime(0)}
           </Text>
         </View>
-        <TouchableOpacity
-          onPress={togglePlayPause}
-          style={{alignSelf: 'center'}}>
-          <Icon size={25} name={btn} color="white" />
-        </TouchableOpacity>
+        <View style={{flexDirection: 'row', alignSelf: 'center'}}>
+          <TouchableOpacity onPress={seekBackward} hitSlop={{right: 20}}>
+            <Icon size={25} name="backward" color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={togglePlayPause}
+            style={{alignSelf: 'center', marginHorizontal: 40}}>
+            <Icon size={25} name={btn} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={seekForward} hitSlop={{left: 20}}>
+            <Icon size={25} name="forward" color="white" />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
