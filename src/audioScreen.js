@@ -51,10 +51,7 @@ const AudioScreen = (props) => {
     });
     progressInterval = setInterval(() => {
       if (player && shouldUpdateProgressBar()) {
-        if (
-          readableTime(player.currentTime / 1000) ==
-          readableTime(player.duration / 1000)
-        )
+        if (readableTime(player.currentTime) == readableTime(player.duration))
           setBttn('play');
         let currentProgress = Math.max(0, player.currentTime) / player.duration;
         if (isNaN(currentProgress)) {
@@ -101,7 +98,7 @@ const AudioScreen = (props) => {
     }
     lastSeek = Date.now();
     let position =
-      player.currentTime - 5000 < 0 ? 0 : player.currentTime - 5000;
+      player.currentTime - 5000 <= 0 ? 0 : player.currentTime - 5000;
     await player.seek(position);
   };
 
@@ -111,10 +108,20 @@ const AudioScreen = (props) => {
     }
     lastSeek = Date.now();
     let position =
-      player.currentTime + 5000 > player.duration
+      player.currentTime + 5000 >= player.duration
         ? player.duration
         : player.currentTime + 5000;
     await player.seek(position);
+  };
+
+  const slow = async () => {
+    if (player.isPaused || player.isStopped || player.speed - 0.25 <= 0) return;
+    player.speed = player.speed - 0.25;
+  };
+
+  const fast = async () => {
+    if (player.isPaused || player.isStopped || player.speed + 0.25 >= 2) return;
+    player.speed = player.speed + 0.25;
   };
 
   return (
@@ -160,6 +167,12 @@ const AudioScreen = (props) => {
           </Text>
         </View>
         <View style={{flexDirection: 'row', alignSelf: 'center'}}>
+          <TouchableOpacity
+            onPress={slow}
+            hitSlop={{right: 20}}
+            style={{marginRight: 20}}>
+            <Icon size={25} name="fast-backward" color="white" />
+          </TouchableOpacity>
           <TouchableOpacity onPress={seekBackward} hitSlop={{right: 20}}>
             <Icon size={25} name="backward" color="white" />
           </TouchableOpacity>
@@ -170,6 +183,12 @@ const AudioScreen = (props) => {
           </TouchableOpacity>
           <TouchableOpacity onPress={seekForward} hitSlop={{left: 20}}>
             <Icon size={25} name="forward" color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={fast}
+            hitSlop={{left: 20}}
+            style={{marginLeft: 20}}>
+            <Icon size={25} name="fast-forward" color="white" />
           </TouchableOpacity>
         </View>
       </View>
