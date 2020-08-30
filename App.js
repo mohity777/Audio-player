@@ -3,7 +3,6 @@ import HomeScreen from './src/homeScreen';
 import AudioScreen from './src/audioScreen';
 import {NavigationContainer} from '@react-navigation/native';
 import React from 'react';
-import {View} from 'react-native';
 
 function App() {
   const Stack = createStackNavigator();
@@ -22,7 +21,7 @@ function App() {
           name="Home"
           component={HomeScreen}
           options={{
-            title: 'Audios',
+            title: 'Music',
           }}
         />
         <Stack.Screen

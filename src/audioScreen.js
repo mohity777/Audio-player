@@ -1,11 +1,13 @@
 import React, {useEffect, useState} from 'react';
-import {View, Text, Slider, Button} from 'react-native';
+import {View, Text, Slider, Button, Image} from 'react-native';
 import {Player} from '@react-native-community/audio-toolkit';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import {TouchableOpacity} from 'react-native-gesture-handler';
 
 let player = null;
 let interval;
+let progressInterval;
+let lastSeek = 0;
 const AudioScreen = (props) => {
   const [btn, setBttn] = useState('play');
   const [progress, setProgress] = useState(0);
@@ -29,11 +31,13 @@ const AudioScreen = (props) => {
     return () => {
       player.destroy();
       clearInterval(interval);
+      clearInterval(progressInterval);
     };
   }, []);
 
   const init = () => {
-    player = new Player('sample', {
+    console.log(props.route.params.imageUrl);
+    player = new Player(props.route.params.fileName, {
       autoDestroy: false,
     }).prepare((err) => {
       if (err) {
@@ -45,18 +49,29 @@ const AudioScreen = (props) => {
       let readableTm = readableTime(player.currentTime / 1000);
       setTm(readableTm);
     }, 100);
+    progressInterval = setInterval(() => {
+      if (player && shouldUpdateProgressBar()) {
+        let currentProgress = Math.max(0, player.currentTime) / player.duration;
+        if (isNaN(currentProgress)) {
+          currentProgress = 0;
+        }
+        setProgress(currentProgress);
+      }
+    }, 100);
   };
 
   const seek = async (percentage) => {
     if (!player) {
       return;
     }
-
+    lastSeek = Date.now();
     let position = percentage * player.duration;
-
     await player.seek(position);
   };
-
+  const shouldUpdateProgressBar = () => {
+    // Debounce progress bar update by 200 ms
+    return Date.now() - lastSeek > 200;
+  };
   function readableTime(duration) {
     // Hours, minutes and seconds
     var hrs = ~~(duration / 3600);
@@ -80,13 +95,18 @@ const AudioScreen = (props) => {
         alignItems: 'center',
         justifyContent: 'center',
         flex: 1,
-        padding: 20,
+        // padding: 20,
       }}>
+      <Image
+        source={{uri: props.route.params.imageUrl}}
+        style={{flex: 1, margin: 25, height: '100%', width: '100%'}}
+      />
       <View
         style={{
           backgroundColor: 'orange',
           width: '100%',
           padding: 2,
+          flex: 0.14,
           // alignItems: 'center',
         }}>
         <View
